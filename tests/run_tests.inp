@@ -1,0 +1,100 @@
+set verbose off
+clear
+
+include assertion.gfn
+
+include "./src/BMST.inp" --force
+
+
+function void test_binary_reset ()
+    print "Start testing binary_reset()"
+
+    bundle b = defbundle("command", "foo")
+    b = binary_reset(b)
+
+    assert_equal_num(nelem(b), 0)
+end function
+test_binary_reset()
+
+
+function void test_binary_homoskedasticity ()
+    print "Start testing binary_homoskedasticity()"
+
+    bundle b = defbundle("command", "foo")
+    b = binary_homoskedasticity(b)
+
+    assert_equal_num(nelem(b), 0)
+end function
+test_binary_homoskedasticity()
+
+
+
+open greene19_1.gdt -q -p
+function void test_binary_reset_logit (const list L)
+    print "Start testing binary_reset() for Logit"
+
+    logit GRADE 0 GPA TUCE PSI -q
+    bundle test = binary_reset($model)
+
+    assert_almost_equal_num(test.test, -0.241754, 1e-6)
+    assert_almost_equal_num(test.pvalue, 0.808971, 1e-6)
+end function
+test_binary_reset_logit(dataset)
+
+
+open greene19_1.gdt -q -p
+function void test_binary_reset_probit (const list L)
+    print "Start testing binary_reset() for Probit"
+
+    probit GRADE 0 GPA TUCE PSI -q
+    bundle test = binary_reset($model)
+
+    assert_almost_equal_num(test.test, -0.277238, 1e-6)
+    assert_almost_equal_num(test.pvalue, 0.781597, 1e-6)
+end function
+test_binary_reset_logit(dataset)
+
+
+open greene19_1.gdt -q -p
+function void test_binary_homoskedasticity_lo (const list L)
+    print "Start testing binary_homoskedasticity for Logit()"
+
+    logit GRADE 0 GPA TUCE PSI -q
+    bundle test = binary_homoskedasticity($model)
+
+    assert_almost_equal_num(test.test, 3.05054, 1e-5)
+    assert_almost_equal_num(test.pvalue, 0.383898, 1e-6)
+end function
+test_binary_homoskedasticity_lo(dataset)
+
+
+open greene19_1.gdt -q -p
+function void test_binary_homoskedasticity_pr (const list L)
+    print "Start testing binary_homoskedasticity for Logit()"
+
+    probit GRADE 0 GPA TUCE PSI -q
+    bundle test = binary_homoskedasticity($model)
+
+    assert_almost_equal_num(test.test, 2.72025, 1e-5)
+    assert_almost_equal_num(test.pvalue, 0.436797, 1e-6)
+end function
+test_binary_homoskedasticity_pr(dataset)
+
+
+
+open greene19_1.gdt -q -p
+function void test_binary_burr (const list L)
+    print "Start testing binary_burr()"
+
+    logit GRADE 0 GPA TUCE PSI -q
+    bundle test = binary_burr($model)
+
+    assert_almost_equal_num(test.test, 0.025283, 1e-6)
+    assert_almost_equal_num(test.pvalue, 0.873664, 1e-6)
+end function
+test_binary_burr(dataset)
+
+
+
+
+printf "\nInfo: All tests passed.\n"

@@ -1,0 +1,97 @@
+***	Binary Model Specification Test package ***
+
+This package comprises the following tests:
+1) Test on no heteroskedasticity for both Logit and Probit models.
+2) Test on the correct functional form (RESET type of test) for both
+Logit and Probit models.
+3) For Logit model test that the distribution is Logistic against
+the alternative that is is Burr Type 2 (and hence skewed).
+
+
+Please ask questions and report bugs on the gretl mailing list if possible. Alternatively, create an issue ticket on the github repo (see below).
+Source code and test script(s) can be found here:
+https://github.com/atecon/bsmt
+
+
+----------------------------------
+Details of the public functions
+----------------------------------
+1) binary_burr(): LM test of the null that the distribution
+                  is Logistic against the alternative that is is Burr
+                  Type 2 (and hence skewed - to the left or to the right)
+    References:
+    * J. M. Thomas (1993), "On Testing the Logistic Assumption in Binary
+      Dependent Variable Models" Empirical Economics, 1993, 18:381-392
+    * D. J. Poirier (1980), " A Lagrange Multiplier Test for Skewness
+      in Binary Logit Models. Economics Letters", 5, 141-143
+
+2) binary_homoskedasticity():
+                  In the LM test for homoskedasticity, the form of the
+                  skedastic function is taken to be exp(2Ztγ) where Zt
+                  is the vector giving the t-th observation on the r
+                  variables that are believed to give rise to the
+                  heteroskedasticity.
+
+3) binary_reset():
+                  The LM test for functional form are similar to the
+                  familiar "RESET test" for the standard linear OLS model.
+    References:
+    * Davidson, R. & J. G. MacKinnon (1984), "Convenient Specification
+	  Tests for Logit and Probit Models", Journal of Econometrics 25,
+      241 262.
+    * Davidson, R. & J. G. MacKinnon (2004), Econometric Theory and
+      Methods, Oxford University Press, Oxford.
+
+For more information see Dave Giles,
+  ULR: http://web.uvic.ca/~dgiles/downloads/binary_choice/index.html
+
+
+
+PUBLIC FUNCTIONS:
+-----------------------------------------------------------------------
+Function:       binary_reset(const bundle model, const bool verbose)
+Arguments:
+model           bundle, Returned model bundle after 'logit' or 'probit'
+                command which can be accessed via the $model accessor.
+verbose:        bool, Print test results (default: TRUE)
+
+Return:
+Bundle comprising the test statistics (key "test") and test's p-value
+(key "pvalue").
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------------------
+Function:       binary_homoskedasticity(const bundle model,
+                const bool verbose)
+Arguments:
+model           bundle, Returned model bundle after 'logit' or 'probit'
+                command which can be accessed via the $model accessors.
+verbose:        bool, Print test results (default: TRUE)
+
+Return:
+Bundle comprising the test statistics (key "test") and test's p-value
+(key "pvalue").
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------------------
+Function:       binary_burr(const bundle model, const bool verbose)
+Arguments:
+model           bundle, Returned model bundle after the 'logit' command
+                which can be accessed via the $model accessors.
+verbose:        bool, Print test results (default: TRUE)
+
+Return:
+Bundle comprising the test statistics (key "test") and test's p-value
+(key "pvalue").
+-----------------------------------------------------------------------
+
+
+
+CHANGELOG:
+- v2.0, September 2020:
+   + Completely refactored.
+   + New much simpler API.
+   + Add unit-tests.
+
+- v1.0, 2016:
+   + Initial version.

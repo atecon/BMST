@@ -1,0 +1,186 @@
+function bundle binary_homoskedasticity (const bundle model,
+                                         const bool verbose[1])
+  /* Wrapper for calling test for no heteroskedasticity. */
+
+  bundle self
+
+  if model.command != "logit" && model.command != "probit"
+    printf "\nError: Model must be either of type 'logit' or 'probit'.\n"
+  else
+    self = homoskedasticity_test(model, verbose)
+  endif
+
+  return self
+end function
+
+
+function bundle binary_reset (const bundle model,
+                              const bool verbose[1])
+  /* Wrapper for calling RESET type of test on correct functional form. */
+
+  bundle self
+
+  if model.command != "logit" && model.command != "probit"
+    printf "\nError: Model must be either of type 'logit' or 'probit'.\n"
+  else
+    self = reset_test(model, verbose)
+  endif
+
+  return self
+end function
+
+
+function bundle homoskedasticity_test (const bundle model,
+                                       const bool verbose[1])
+  /* In the LM test for homoskedasticity, the form of the skedastic function is taken to be exp(2Ztγ) where Zt is the vector giving the t-th observation on the r variables that are believed to give rise to the heteroskedasticity. */
+
+  bundle ret = null
+  bundle self = preparations(model)
+
+  matrix U = zeros(rows(self.lhs), 1)
+  matrix rhs = self.r1m ~ self.r2m
+
+  mols(self.lhs, rhs, &U)
+  matrix fitted = self.lhs .- U
+  scalar ret.test = sum(fitted.^2)
+
+  /* The homoskedasticity  test statistic is asymptotically Chi Square with "r" degrees of freedom, under the null of  homoskedasticity, where "r" is the number of variables involved in the (alternative) heteroskedasticity. So calculate the (asymptotic)  p-value */
+  scalar ret.pvalue = 1 - cdf(c, cols(self.r2m), ret.test)
+
+  print_homoskedasticity_test(ret, model, verbose)
+
+  return ret
+end function
+
+
+function bundle reset_test (const bundle model, const bool verbose[1])
+  /* The LM test for functional form are similar to the familiar "RESET test" for the standard linear OLS model. */
+
+  bundle ret = null
+  bundle self = preparations(model)
+
+  matrix r3 = self.scalefacx .* (self.xbeta).^2
+  matrix rhs = r3 ~ self.r1m
+
+  # The coeffcient to be tested is that of the first regerssor - see the ordering of the above group
+  matrix V = zeros(rows(self.lhs), cols(rhs))
+  matrix U = zeros(rows(self.lhs), 1)
+
+  matrix bhat = mols(self.lhs, rhs, &U, &V)
+  matrix stderr = sqrt(diag(V))
+
+  matrix tstat = bhat ./ stderr
+  scalar ret.test = tstat[1]
+
+  # The functional form  test statistic is asymptotically standard normal. So calculate the (asymptotic)  p-value:
+  scalar ret.pvalue = 2 * (1 - cnorm(abs(ret.test)))
+
+  print_reset_test(ret, model, verbose)
+
+  return ret
+end function
+
+
+function bundle binary_burr (const bundle model, const bool verbose[1])
+  /* LM test of the null that the distribution is Logistic against the alternative that is is Burr Type 2 (and hence skewed - to the left or to the right) */
+
+  errorif(model.command != "logit", "Function works only for logit estimator.")
+
+  bundle self
+
+  matrix my = {model.ylist}
+  matrix mx = {model.xlist}
+  matrix dee = 1 .+ exp(lincomb(model.xlist, model.coeff))
+
+  matrix bf = 1 / dee
+  matrix sf = (dee - 1) ./ dee.^2
+  matrix sr = my .* sqrt(bf ./ (1 .- bf)) - (1 .- my) .* sqrt( (1.-bf) ./ bf)
+  matrix scalefac = sf ./ sqrt((1 .- bf) .* bf)
+  matrix r1m = mx .* scalefac
+  matrix r2m = log(dee) .* sqrt(bf ./ (1 - bf))
+  matrix X = r1m ~ r2m
+
+  matrix U = zeros(rows(sr), 1)
+  mols(sr, X, &U)
+  matrix fitted = sr .- U
+
+  scalar self.test = sum(fitted.^2)
+  scalar self.pvalue = pvalue(c, 1, self.test)
+
+  print_burr_test(self, model, verbose)
+
+  return self
+end function
+
+
+function void print_burr_test (const bundle self, const bundle model, const bool verbose)
+  /* Print Logit "burr" test results. */
+
+  if verbose
+    printf "-------------------------------------------------------\n"
+      printf "*** Logit model LM Test of Logistic Against Burr Type II ***\n"
+      printf "H0: \t Logistic distribution\n"
+      printf "H1: \t Burr (skewed) distribution\n"
+      printf "N = %d\n", model.T
+      printf "LM-BURR = %2.4f (prob= %.3f)", self.test, self.pvalue
+      printf "\n-------------------------------------------------------\n"
+  endif
+end function
+
+
+function void print_homoskedasticity_test (const bundle ret, const bundle model, const bool verbose)
+  /* Print results for test on homoskedasticity. */
+
+  if verbose
+    string estimator = (model.command == "logit") ? "Logit" : "Probit"
+    printf "-------------------------------------------------------\n"
+    printf "*** %s model LM test for homoskedasticity ***\n", estimator
+    printf "H0: \t Residuals are homoskedastic\n"
+    printf "H1: \t Residuals are heteroskedastic\n"
+    printf "N = %d\n", model.T
+    printf "LM-HOM = %2.3f (p=%.3f)\n", ret.test, ret.pvalue
+    printf "-------------------------------------------------------\n"
+  endif
+end function
+
+
+function void print_reset_test (const bundle ret, const bundle model, const bool verbose)
+  /* Print RESET test results. */
+
+  if verbose
+    string estimator = (model.command == "logit") ? "Logit" : "Probit"
+    printf "-------------------------------------------------------\n"
+    printf "*** %s model LM test for correct functional form ***\n", estimator
+    printf "H0: \t Functional form is correct\n"
+    printf "H1: \t Functional form is not correct\n"
+    printf "N = %d\n", model.T
+    printf "LM-RESET = %2.3f (p=%.3f)\n", ret.test, ret.pvalue
+    printf "-------------------------------------------------------\n"
+  endif
+end function
+
+
+function bundle preparations (const bundle model)
+    /* Prepare things that are common for a couple of tests. */
+
+    bundle self
+
+    list xlist = model.xlist
+    matrix self.xbeta = {lincomb(xlist, model.coeff)}
+
+    matrix bf = (model.command == "logit") ? logistic(self.xbeta) : cnorm(self.xbeta)
+    matrix sf = (model.command == "logit") ? bf .* (1-bf) : dnorm(self.xbeta)
+
+    matrix s = sqrt(bf .* (1 - bf))
+    self.lhs = ({model.ylist} - bf) ./ s
+
+    self.scalefacx = sf ./ s
+    self.scalefacz = -self.xbeta .* self.scalefacx
+
+    self.r1m = {xlist} .* self.scalefacx
+
+    list xlist -= const
+    self.r2m = {xlist} .* self.scalefacz
+
+    return self
+end function

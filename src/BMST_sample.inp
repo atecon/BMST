@@ -1,0 +1,40 @@
+set verbose off
+clear
+
+include BMST.gfn
+
+open greene19_1.gdt
+
+# Probit example
+probit GRADE 0 GPA TUCE PSI
+bundle test = binary_reset($model)
+print test
+bundle test = binary_homoskedasticity($model)
+
+
+# Logit example
+logit GRADE 0 GPA TUCE PSI
+bundle test = binary_reset($model)
+bundle test = binary_homoskedasticity($model)
+bundle test = binary_burr($model)
+
+
+/* Activate if needed
+#--------------------------------------------------------
+# Example 2: Replicate Dave Gile's PROBIT_HETERO program
+#--------------------------------------------------------
+open http://web.uvic.ca/~dgiles/downloads/binary_choice/Logistic_Burr.wf1 --quiet
+
+probit Y 0 X1 X2
+binary_reset($model)
+binary_homoskedasticity($model)
+
+#----------------------------------------
+# Replicate Dave Gile's LOGIT_HETERO and
+# LOGIT_BURR programs
+#-----------------------------------------
+logit Y const X1 X2
+binary_burr($model)
+binary_reset($model)
+binary_homoskedasticity($model)
+*/
