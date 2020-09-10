@@ -184,3 +184,10 @@ function bundle preparations (const bundle model)
 
     return self
 end function
+
+
+function void gui_binary_reset (void)
+    /* Wrapper function for gui menu-entry */
+
+    bundle b = binary_reset($model)
+end function
