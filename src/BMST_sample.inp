@@ -21,7 +21,7 @@ bundle test = binary_burr($model)
 
 /* Activate if needed
 #--------------------------------------------------------
-# Example 2: Replicate Dave Giles PROBIT_HETERO program
+# Example 2: Replicate Dave Giles' PROBIT_HETERO program
 #--------------------------------------------------------
 open http://web.uvic.ca/~dgiles/downloads/binary_choice/Logistic_Burr.wf1 --quiet
 
@@ -30,7 +30,7 @@ binary_reset($model)
 binary_homoskedasticity($model)
 
 #----------------------------------------
-# Replicate Dave Giles LOGIT_HETERO and
+# Replicate Dave Giles' LOGIT_HETERO and
 # LOGIT_BURR programs
 #-----------------------------------------
 logit Y const X1 X2

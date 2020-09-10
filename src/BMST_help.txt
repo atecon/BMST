@@ -8,7 +8,8 @@ Logit and Probit models.
 the alternative that is Burr Type 2 (and hence skewed).
 
 
-Please ask questions and report bugs on the gretl mailing list if possible. Alternatively, create an issue ticket on the github repo (see below).
+Please ask questions and report bugs on the gretl mailing list if possible.
+Alternatively, create an issue ticket on the github repo (see below).
 Source code and test script(s) can be found here:
 https://github.com/atecon/bsmt
 
@@ -37,7 +38,7 @@ Details of the public functions
                   familiar "RESET test" for the standard linear OLS model.
     References:
     * Davidson, R. & J. G. MacKinnon (1984), "Convenient Specification
-	  Tests for Logit and Probit Models", Journal of Econometrics 25,
+      Tests for Logit and Probit Models", Journal of Econometrics 25,
       241 262.
     * Davidson, R. & J. G. MacKinnon (2004), Econometric Theory and
       Methods, Oxford University Press, Oxford.
@@ -50,8 +51,8 @@ For more information see Dave Giles,
 PUBLIC FUNCTIONS:
 -----------------------------------------------------------------------
 Function:       binary_reset(const bundle model, const bool verbose)
-Arguments:
-model           bundle, Returned model bundle after 'logit' or 'probit'
+Arguments
+model:          bundle, Returned model bundle after 'logit' or 'probit'
                 command which can be accessed via the $model accessor.
 verbose:        bool, Print test results (default: TRUE)
 
@@ -63,8 +64,8 @@ Bundle comprising the test statistics (key "test") and test's p-value
 -----------------------------------------------------------------------
 Function:       binary_homoskedasticity(const bundle model,
                 const bool verbose)
-Arguments:
-model           bundle, Returned model bundle after 'logit' or 'probit'
+Arguments
+model:          bundle, Returned model bundle after 'logit' or 'probit'
                 command which can be accessed via the $model accessors.
 verbose:        bool, Print test results (default: TRUE)
 
@@ -75,8 +76,8 @@ Bundle comprising the test statistics (key "test") and test's p-value
 
 -----------------------------------------------------------------------
 Function:       binary_burr(const bundle model, const bool verbose)
-Arguments:
-model           bundle, Returned model bundle after the 'logit' command
+Arguments
+model:          bundle, Returned model bundle after the 'logit' command
                 which can be accessed via the $model accessors.
 verbose:        bool, Print test results (default: TRUE)
 
@@ -92,6 +93,7 @@ CHANGELOG:
    + Completely refactored.
    + New much simpler API.
    + Add unit-tests.
+   + Required gretl version is now 2017d.
 
 - v1.0, 2016:
    + Initial version.

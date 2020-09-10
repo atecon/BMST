@@ -32,7 +32,9 @@ end function
 
 function bundle homoskedasticity_test (const bundle model,
                                        const bool verbose[1])
-  /* In the LM test for homoskedasticity, the form of the skedastic function is taken to be exp(2Ztγ) where Zt is the vector giving the t-th observation on the r variables that are believed to give rise to the heteroskedasticity. */
+  /* In the LM test for homoskedasticity, the form of the skedastic function is
+  taken to be exp(2Ztγ) where Zt is the vector giving the t-th observation on
+  the r variables that are believed to give rise to the heteroskedasticity. */
 
   bundle ret = null
   bundle self = preparations(model)
@@ -44,7 +46,10 @@ function bundle homoskedasticity_test (const bundle model,
   matrix fitted = self.lhs .- U
   scalar ret.test = sum(fitted.^2)
 
-  /* The homoskedasticity  test statistic is asymptotically Chi Square with "r" degrees of freedom, under the null of  homoskedasticity, where "r" is the number of variables involved in the (alternative) heteroskedasticity. So calculate the (asymptotic)  p-value */
+  /* The homoskedasticity  test statistic is asymptotically Chi Square with "r"
+  degrees of freedom, under the null of  homoskedasticity, where "r" is the
+  number of variables involved in the (alternative) heteroskedasticity. So
+  calculate the (asymptotic)  p-value */
   scalar ret.pvalue = 1 - cdf(c, cols(self.r2m), ret.test)
 
   print_homoskedasticity_test(ret, model, verbose)
@@ -54,7 +59,8 @@ end function
 
 
 function bundle reset_test (const bundle model, const bool verbose[1])
-  /* The LM test for functional form are similar to the familiar "RESET test" for the standard linear OLS model. */
+  /* The LM test for functional form are similar to the familiar "RESET test"
+  for the standard linear OLS model. */
 
   bundle ret = null
   bundle self = preparations(model)
@@ -62,7 +68,8 @@ function bundle reset_test (const bundle model, const bool verbose[1])
   matrix r3 = self.scalefacx .* (self.xbeta).^2
   matrix rhs = r3 ~ self.r1m
 
-  # The coeffcient to be tested is that of the first regerssor - see the ordering of the above group
+  # The coeffcient to be tested is that of the first regerssor - see the
+  # ordering of the above group
   matrix V = zeros(rows(self.lhs), cols(rhs))
   matrix U = zeros(rows(self.lhs), 1)
 
@@ -72,7 +79,8 @@ function bundle reset_test (const bundle model, const bool verbose[1])
   matrix tstat = bhat ./ stderr
   scalar ret.test = tstat[1]
 
-  # The functional form  test statistic is asymptotically standard normal. So calculate the (asymptotic)  p-value:
+  /* The functional form  test statistic is asymptotically standard normal. So
+    calculate the (asymptotic)  p-value: */
   scalar ret.pvalue = 2 * (1 - cnorm(abs(ret.test)))
 
   print_reset_test(ret, model, verbose)
@@ -82,9 +90,13 @@ end function
 
 
 function bundle binary_burr (const bundle model, const bool verbose[1])
-  /* LM test of the null that the distribution is Logistic against the alternative that is is Burr Type 2 (and hence skewed - to the left or to the right) */
+  /* LM test of the null that the distribution is Logistic against the
+  alternative that is is Burr Type 2 (and hence skewed - to the left or
+  to the right) */
 
-  errorif(model.command != "logit", "Function works only for logit estimator.")
+  if model.command != "logit"
+      funcerr "Function works only for logit estimator."
+  endif
 
   bundle self
 
@@ -113,7 +125,9 @@ function bundle binary_burr (const bundle model, const bool verbose[1])
 end function
 
 
-function void print_burr_test (const bundle self, const bundle model, const bool verbose)
+function void print_burr_test (const bundle self,
+                              const bundle model,
+                              const bool verbose)
   /* Print Logit "burr" test results. */
 
   if verbose
@@ -128,7 +142,9 @@ function void print_burr_test (const bundle self, const bundle model, const bool
 end function
 
 
-function void print_homoskedasticity_test (const bundle ret, const bundle model, const bool verbose)
+function void print_homoskedasticity_test (const bundle ret,
+                                          const bundle model,
+                                          const bool verbose)
   /* Print results for test on homoskedasticity. */
 
   if verbose
@@ -144,7 +160,9 @@ function void print_homoskedasticity_test (const bundle ret, const bundle model,
 end function
 
 
-function void print_reset_test (const bundle ret, const bundle model, const bool verbose)
+function void print_reset_test (const bundle ret,
+                              const bundle model,
+                              const bool verbose)
   /* Print RESET test results. */
 
   if verbose
@@ -168,7 +186,8 @@ function bundle preparations (const bundle model)
     list xlist = model.xlist
     matrix self.xbeta = {lincomb(xlist, model.coeff)}
 
-    matrix bf = (model.command == "logit") ? logistic(self.xbeta) : cnorm(self.xbeta)
+    matrix bf = (model.command == "logit") ? logistic(self.xbeta) \
+      : cnorm(self.xbeta)
     matrix sf = (model.command == "logit") ? bf .* (1-bf) : dnorm(self.xbeta)
 
     matrix s = sqrt(bf .* (1 - bf))
@@ -187,7 +206,7 @@ end function
 
 
 function void gui_binary_reset (void)
-    /* Wrapper function for gui menu-entry */
+    /* DUMMY Wrapper function for gui menu-entry */
 
     bundle b = binary_reset($model)
 end function

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gretl-functions>
-<gretl-function-package name="BMST" minver="2020a">
+<gretl-function-package name="BMST" minver="2017d">
 <author email="atecon@posteo.de">Artur Tarassow</author>
 <version>2.0</version>
 <date>2020-09-10</date>
-<description>Logit + Probit model specifcation tests package</description>
+<description>Binary (logit + probit) model specification tests</description>
 <tags>C25 C52</tags>
 <help>
 ***	Binary Model Specification Test package ***
@@ -17,7 +17,8 @@ Logit and Probit models.
 the alternative that is Burr Type 2 (and hence skewed).
 
 
-Please ask questions and report bugs on the gretl mailing list if possible. Alternatively, create an issue ticket on the github repo (see below).
+Please ask questions and report bugs on the gretl mailing list if possible.
+Alternatively, create an issue ticket on the github repo (see below).
 Source code and test script(s) can be found here:
 https://github.com/atecon/bsmt
 
@@ -46,7 +47,7 @@ Details of the public functions
                   familiar &quot;RESET test&quot; for the standard linear OLS model.
     References:
     * Davidson, R. &amp; J. G. MacKinnon (1984), &quot;Convenient Specification
-	  Tests for Logit and Probit Models&quot;, Journal of Econometrics 25,
+      Tests for Logit and Probit Models&quot;, Journal of Econometrics 25,
       241 262.
     * Davidson, R. &amp; J. G. MacKinnon (2004), Econometric Theory and
       Methods, Oxford University Press, Oxford.
@@ -59,8 +60,8 @@ For more information see Dave Giles,
 PUBLIC FUNCTIONS:
 -----------------------------------------------------------------------
 Function:       binary_reset(const bundle model, const bool verbose)
-Arguments:
-model           bundle, Returned model bundle after 'logit' or 'probit'
+Arguments
+model:          bundle, Returned model bundle after 'logit' or 'probit'
                 command which can be accessed via the $model accessor.
 verbose:        bool, Print test results (default: TRUE)
 
@@ -72,8 +73,8 @@ Bundle comprising the test statistics (key &quot;test&quot;) and test's p-value
 -----------------------------------------------------------------------
 Function:       binary_homoskedasticity(const bundle model,
                 const bool verbose)
-Arguments:
-model           bundle, Returned model bundle after 'logit' or 'probit'
+Arguments
+model:          bundle, Returned model bundle after 'logit' or 'probit'
                 command which can be accessed via the $model accessors.
 verbose:        bool, Print test results (default: TRUE)
 
@@ -84,8 +85,8 @@ Bundle comprising the test statistics (key &quot;test&quot;) and test's p-value
 
 -----------------------------------------------------------------------
 Function:       binary_burr(const bundle model, const bool verbose)
-Arguments:
-model           bundle, Returned model bundle after the 'logit' command
+Arguments
+model:          bundle, Returned model bundle after the 'logit' command
                 which can be accessed via the $model accessors.
 verbose:        bool, Print test results (default: TRUE)
 
@@ -101,6 +102,7 @@ CHANGELOG:
    + Completely refactored.
    + New much simpler API.
    + Add unit-tests.
+   + Required gretl version is now 2017d.
 
 - v1.0, 2016:
    + Initial version.
@@ -110,8 +112,12 @@ CHANGELOG:
   <param name="model" type="bundle" const="true"/>
   <param name="verbose" type="bool" default="1" const="true"/>
  </params>
-<code>/* LM test of the null that the distribution is Logistic against the alternative that is is Burr Type 2 (and hence skewed - to the left or to the right) */
-errorif(model.command != &quot;logit&quot;, &quot;Function works only for logit estimator.&quot;)
+<code>/* LM test of the null that the distribution is Logistic against the
+alternative that is is Burr Type 2 (and hence skewed - to the left or
+to the right) */
+if model.command != &quot;logit&quot;
+  funcerr &quot;Function works only for logit estimator.&quot;
+endif
 bundle self
 matrix my = {model.ylist}
 matrix mx = {model.xlist}
@@ -167,7 +173,9 @@ return self
   <param name="model" type="bundle" const="true"/>
   <param name="verbose" type="bool" default="1" const="true"/>
  </params>
-<code>/* In the LM test for homoskedasticity, the form of the skedastic function is taken to be exp(2Ztγ) where Zt is the vector giving the t-th observation on the r variables that are believed to give rise to the heteroskedasticity. */
+<code>/* In the LM test for homoskedasticity, the form of the skedastic function is
+taken to be exp(2Ztγ) where Zt is the vector giving the t-th observation on
+the r variables that are believed to give rise to the heteroskedasticity. */
 bundle ret = null
 bundle self = preparations(model)
 matrix U = zeros(rows(self.lhs), 1)
@@ -175,7 +183,10 @@ matrix rhs = self.r1m ~ self.r2m
 mols(self.lhs, rhs, &amp;U)
 matrix fitted = self.lhs .- U
 scalar ret.test = sum(fitted.^2)
-/* The homoskedasticity  test statistic is asymptotically Chi Square with &quot;r&quot; degrees of freedom, under the null of  homoskedasticity, where &quot;r&quot; is the number of variables involved in the (alternative) heteroskedasticity. So calculate the (asymptotic)  p-value */
+/* The homoskedasticity  test statistic is asymptotically Chi Square with &quot;r&quot;
+degrees of freedom, under the null of  homoskedasticity, where &quot;r&quot; is the
+number of variables involved in the (alternative) heteroskedasticity. So
+calculate the (asymptotic)  p-value */
 scalar ret.pvalue = 1 - cdf(c, cols(self.r2m), ret.test)
 print_homoskedasticity_test(ret, model, verbose)
 return ret
@@ -186,19 +197,22 @@ return ret
   <param name="model" type="bundle" const="true"/>
   <param name="verbose" type="bool" default="1" const="true"/>
  </params>
-<code>/* The LM test for functional form are similar to the familiar &quot;RESET test&quot; for the standard linear OLS model. */
+<code>/* The LM test for functional form are similar to the familiar &quot;RESET test&quot;
+for the standard linear OLS model. */
 bundle ret = null
 bundle self = preparations(model)
 matrix r3 = self.scalefacx .* (self.xbeta).^2
 matrix rhs = r3 ~ self.r1m
-# The coeffcient to be tested is that of the first regerssor - see the ordering of the above group
+# The coeffcient to be tested is that of the first regerssor - see the
+# ordering of the above group
 matrix V = zeros(rows(self.lhs), cols(rhs))
 matrix U = zeros(rows(self.lhs), 1)
 matrix bhat = mols(self.lhs, rhs, &amp;U, &amp;V)
 matrix stderr = sqrt(diag(V))
 matrix tstat = bhat ./ stderr
 scalar ret.test = tstat[1]
-# The functional form  test statistic is asymptotically standard normal. So calculate the (asymptotic)  p-value:
+/* The functional form  test statistic is asymptotically standard normal. So
+calculate the (asymptotic)  p-value: */
 scalar ret.pvalue = 2 * (1 - cnorm(abs(ret.test)))
 print_reset_test(ret, model, verbose)
 return ret
@@ -281,7 +295,7 @@ return self
 </code>
 </gretl-function>
 <gretl-function name="gui_binary_reset" type="void" private="1">
-<code>/* Wrapper function for gui menu-entry */
+<code>/* DUMMY Wrapper function for gui menu-entry */
 bundle b = binary_reset($model)
 </code>
 </gretl-function>
@@ -309,7 +323,7 @@ bundle test = binary_burr($model)
 
 /* Activate if needed
 #--------------------------------------------------------
-# Example 2: Replicate Dave Giles PROBIT_HETERO program
+# Example 2: Replicate Dave Giles' PROBIT_HETERO program
 #--------------------------------------------------------
 open http://web.uvic.ca/~dgiles/downloads/binary_choice/Logistic_Burr.wf1 --quiet
 
@@ -318,7 +332,7 @@ binary_reset($model)
 binary_homoskedasticity($model)
 
 #----------------------------------------
-# Replicate Dave Giles LOGIT_HETERO and
+# Replicate Dave Giles' LOGIT_HETERO and
 # LOGIT_BURR programs
 #-----------------------------------------
 logit Y const X1 X2
