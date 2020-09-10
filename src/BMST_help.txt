@@ -5,7 +5,7 @@ This package comprises the following tests:
 2) Test on the correct functional form (RESET type of test) for both
 Logit and Probit models.
 3) For Logit model test that the distribution is Logistic against
-the alternative that is is Burr Type 2 (and hence skewed).
+the alternative that is Burr Type 2 (and hence skewed).
 
 
 Please ask questions and report bugs on the gretl mailing list if possible. Alternatively, create an issue ticket on the github repo (see below).
@@ -17,7 +17,7 @@ https://github.com/atecon/bsmt
 Details of the public functions
 ----------------------------------
 1) binary_burr(): LM test of the null that the distribution
-                  is Logistic against the alternative that is is Burr
+                  is Logistic against the alternative that is Burr
                   Type 2 (and hence skewed - to the left or to the right)
     References:
     * J. M. Thomas (1993), "On Testing the Logistic Assumption in Binary
@@ -43,7 +43,7 @@ Details of the public functions
       Methods, Oxford University Press, Oxford.
 
 For more information see Dave Giles,
-  ULR: http://web.uvic.ca/~dgiles/downloads/binary_choice/index.html
+  URL: http://web.uvic.ca/~dgiles/downloads/binary_choice/index.html
 
 
 

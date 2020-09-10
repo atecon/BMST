@@ -3,7 +3,7 @@
 <gretl-function-package name="BMST" minver="2020a">
 <author email="atecon@posteo.de">Artur Tarassow</author>
 <version>2.0</version>
-<date>2020-09-09</date>
+<date>2020-09-10</date>
 <description>Logit + Probit model specifcation tests package</description>
 <tags>C25 C52</tags>
 <help>
@@ -14,7 +14,7 @@ This package comprises the following tests:
 2) Test on the correct functional form (RESET type of test) for both
 Logit and Probit models.
 3) For Logit model test that the distribution is Logistic against
-the alternative that is is Burr Type 2 (and hence skewed).
+the alternative that is Burr Type 2 (and hence skewed).
 
 
 Please ask questions and report bugs on the gretl mailing list if possible. Alternatively, create an issue ticket on the github repo (see below).
@@ -26,7 +26,7 @@ https://github.com/atecon/bsmt
 Details of the public functions
 ----------------------------------
 1) binary_burr(): LM test of the null that the distribution
-                  is Logistic against the alternative that is is Burr
+                  is Logistic against the alternative that is Burr
                   Type 2 (and hence skewed - to the left or to the right)
     References:
     * J. M. Thomas (1993), &quot;On Testing the Logistic Assumption in Binary
@@ -52,7 +52,7 @@ Details of the public functions
       Methods, Oxford University Press, Oxford.
 
 For more information see Dave Giles,
-  ULR: http://web.uvic.ca/~dgiles/downloads/binary_choice/index.html
+  URL: http://web.uvic.ca/~dgiles/downloads/binary_choice/index.html
 
 
 
@@ -280,6 +280,11 @@ self.r2m = {xlist} .* self.scalefacz
 return self
 </code>
 </gretl-function>
+<gretl-function name="gui_binary_reset" type="void" private="1">
+<code>/* Wrapper function for gui menu-entry */
+bundle b = binary_reset($model)
+</code>
+</gretl-function>
 <sample-script>
 set verbose off
 clear
@@ -304,7 +309,7 @@ bundle test = binary_burr($model)
 
 /* Activate if needed
 #--------------------------------------------------------
-# Example 2: Replicate Dave Gile's PROBIT_HETERO program
+# Example 2: Replicate Dave Giles PROBIT_HETERO program
 #--------------------------------------------------------
 open http://web.uvic.ca/~dgiles/downloads/binary_choice/Logistic_Burr.wf1 --quiet
 
@@ -313,7 +318,7 @@ binary_reset($model)
 binary_homoskedasticity($model)
 
 #----------------------------------------
-# Replicate Dave Gile's LOGIT_HETERO and
+# Replicate Dave Giles LOGIT_HETERO and
 # LOGIT_BURR programs
 #-----------------------------------------
 logit Y const X1 X2
