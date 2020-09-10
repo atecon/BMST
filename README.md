@@ -1,6 +1,6 @@
-# BMST
+# BMST -- *Binary Model Specification Test* package
  
-This package comprises the following tests:
+This Gretl package comprises the following specifications tests for binary logit and probit models:
 
 1) Test on no heteroskedasticity for both Logit and Probit models.
 2) Test on the correct functional form (RESET type of test) for both Logit and Probit models.
