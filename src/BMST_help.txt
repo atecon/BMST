@@ -58,7 +58,9 @@ verbose:        bool, Print test results (default: TRUE)
 
 Return:
 Bundle comprising the test statistics (key "test") and test's p-value
-(key "pvalue").
+(key "pvalue"). If any of the endogenous or exogenous series includes
+missing values, the returned bundle is empty and an error message is
+printed.
 -----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
@@ -71,7 +73,9 @@ verbose:        bool, Print test results (default: TRUE)
 
 Return:
 Bundle comprising the test statistics (key "test") and test's p-value
-(key "pvalue").
+(key "pvalue"). If any of the endogenous or exogenous series includes
+missing values, the returned bundle is empty and an error message is
+printed.
 -----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
@@ -83,12 +87,18 @@ verbose:        bool, Print test results (default: TRUE)
 
 Return:
 Bundle comprising the test statistics (key "test") and test's p-value
-(key "pvalue").
+(key "pvalue"). If any of the endogenous or exogenous series includes
+missing values, the returned bundle is empty and an error message is
+printed.
 -----------------------------------------------------------------------
 
 
 
 CHANGELOG:
+- 2.1, January 2021:
+   + Add a check for missing values which would otherwise break the
+     computation.
+   + Minimum required version is now 2020b.
 - v2.0, September 2020:
    + Completely refactored.
    + New much simpler API.

@@ -6,40 +6,65 @@ include assertion.gfn
 include "./src/BMST.inp" --force
 
 
-function void test_binary_reset ()
-    print "Start testing binary_reset()"
-
-    bundle b = defbundle("command", "foo")
-    b = binary_reset(b)
-
-    assert_equal_num(nelem(b), 0)
-end function
-test_binary_reset()
-
-
-function void test_binary_homoskedasticity ()
-    print "Start testing binary_homoskedasticity()"
-
-    bundle b = defbundle("command", "foo")
-    b = binary_homoskedasticity(b)
-
-    assert_equal_num(nelem(b), 0)
-end function
-test_binary_homoskedasticity()
-
-
 
 open greene19_1.gdt -q -p
-function void test_binary_reset_logit (const list L)
-    print "Start testing binary_reset() for Logit"
+series GPA_w_missings = GPA
+GPA_w_missings[19] = NA
+series GRADE_w_missings = GRADE
+GRADE_w_missings[19] = NA
+bundles Parameters = null
+/*
+Parameters = Parameters + \
+            _(which= "binary_homoskedasticity", endog = deflist(GRADE),\
+            xlist = deflist(const, GPA_w_missings), expected = TRUE)
+Parameters = Parameters + \
+            _(which= "binary_homoskedasticity", endog = deflist(GRADE),\
+            xlist = deflist(const, GPA), expected = FALSE)
+Parameters = Parameters + \
+            _(which= "binary_homoskedasticity", endog = deflist(GRADE_w_missings),\
+            xlist = deflist(const, GPA), expected = TRUE)
+*/
+#/*
+Parameters = Parameters + \
+            _(which= "binary_reset", endog = deflist(GRADE),\
+            xlist = deflist(const, GPA_w_missings), expected = TRUE)
+Parameters = Parameters + \
+            _(which= "binary_reset", endog = deflist(GRADE),\
+            xlist = deflist(const, GPA), expected = FALSE)
+Parameters = Parameters + \
+            _(which= "binary_reset", endog = deflist(GRADE_w_missings),\
+            xlist = deflist(const, GPA), expected = TRUE)
+#*/
+Parameters = Parameters + \
+            _(which= "binary_burr", endog = deflist(GRADE),\
+            xlist = deflist(const, GPA_w_missings), expected = TRUE)
+Parameters = Parameters + \
+            _(which= "binary_burr", endog = deflist(GRADE),\
+            xlist = deflist(const, GPA), expected = FALSE)
+Parameters = Parameters + \
+            _(which= "binary_burr", endog = deflist(GRADE_w_missings),\
+            xlist = deflist(const, GPA), expected = TRUE)
 
-    logit GRADE 0 GPA TUCE PSI -q
-    bundle test = binary_reset($model)
+function void test_tests_w_missings (const bundles P)
+    print "Start testing how tests handle missing values."
 
-    assert_almost_equal_num(test.test, -0.241754, 1e-6)
-    assert_almost_equal_num(test.pvalue, 0.808971, 1e-6)
+    loop foreach i P
+    eval i
+        # Given
+        series y = P[i].endog[1]
+        list xlist = P[i].xlist
+        logit y xlist -q
+
+        # When
+        string funcname = P[i].which
+        bundle Output = @funcname($model)
+        actual = Output.error
+
+         # Then
+         assert((actual > 0) == P[i].expected)
+    endloop
 end function
-test_binary_reset_logit(dataset)
+test_tests_w_missings(Parameters)
 
 
 open greene19_1.gdt -q -p
@@ -52,7 +77,7 @@ function void test_binary_reset_probit (const list L)
     assert_almost_equal_num(test.test, -0.277238, 1e-6)
     assert_almost_equal_num(test.pvalue, 0.781597, 1e-6)
 end function
-test_binary_reset_logit(dataset)
+test_binary_reset_probit(dataset)
 
 
 open greene19_1.gdt -q -p
@@ -95,6 +120,30 @@ end function
 test_binary_burr(dataset)
 
 
+open greene19_1.gdt -q -p
+series GPA_w_missings = GPA
+GPA_w_missings[19] = NA
+series PSI_w_missings = PSI
+PSI_w_missings[19] = NA
+bundles Parameters = null
+Parameters = Parameters + \
+    _(mylist = deflist(GPA_w_missings, PSI_w_missings), expected = TRUE)
+Parameters = Parameters + \
+    _(mylist = deflist(GPA, PSI_w_missings), expected = TRUE)
+Parameters = Parameters + \
+    _(mylist = deflist(GPA_w_missings, PSI), expected = TRUE)
+Parameters = Parameters + \
+    _(mylist = deflist(GPA, PSI), expected = FALSE)
+function void test_has_missings (const bundles P)
+    print "Start testing has_missings()."
 
+    loop foreach i P
+        # Given + When
+        actual = has_missings(P[i].mylist)
+        # Then
+        assert(actual == P[i].expected)
+    endloop
+end function
+test_has_missings(Parameters)
 
 printf "\nInfo: All tests passed.\n"

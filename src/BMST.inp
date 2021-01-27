@@ -1,8 +1,37 @@
+function scalar has_missings (const list L)
+  /* Check each series for missing values.
+  If any series has at least a missing value return TRUE, otherwise FALSE. */
+
+  loop foreach i L
+    if sum(missing(L.$i)) > 0
+      return TRUE
+    endif
+  endloop
+
+  return FALSE
+end function
+
+function void print_missings_error_set_error (const bool has_missings, bundle *self)
+  /* code description
+  return: type, description */
+
+  self.error = has_missings
+
+  if has_missings == TRUE
+    printf "\nError: Missing value(s) encountered. Abort.\n"
+  endif
+end function
+
 function bundle binary_homoskedasticity (const bundle model,
                                          const bool verbose[1])
   /* Wrapper for calling test for no heteroskedasticity. */
 
   bundle self
+  scalar has_missings = has_missings(deflist(model.xlist, model.ylist))
+  print_missings_error_set_error(has_missings, &self)
+  if self.error == TRUE
+    return self
+  endif
 
   if model.command != "logit" && model.command != "probit"
     printf "\nError: Model must be either of type 'logit' or 'probit'.\n"
@@ -19,6 +48,11 @@ function bundle binary_reset (const bundle model,
   /* Wrapper for calling RESET type of test on correct functional form. */
 
   bundle self
+  scalar has_missings = has_missings(deflist(model.xlist, model.ylist))
+  print_missings_error_set_error(has_missings, &self)
+  if self.error == TRUE
+    return self
+  endif
 
   if model.command != "logit" && model.command != "probit"
     printf "\nError: Model must be either of type 'logit' or 'probit'.\n"
@@ -100,6 +134,12 @@ function bundle binary_burr (const bundle model, const bool verbose[1])
 
   bundle self
 
+  scalar has_missings = has_missings(deflist(model.xlist, model.ylist))
+  print_missings_error_set_error(has_missings, &self)
+  if self.error == TRUE
+    return self
+  endif
+
   matrix my = {model.ylist}
   matrix mx = {model.xlist}
   matrix dee = 1 .+ exp(lincomb(model.xlist, model.coeff))
@@ -142,7 +182,7 @@ function void print_burr_test (const bundle self,
 end function
 
 
-function void print_homoskedasticity_test (const bundle ret,
+function void print_homoskedasticity_test (const bundle self,
                                           const bundle model,
                                           const bool verbose)
   /* Print results for test on homoskedasticity. */
@@ -154,13 +194,13 @@ function void print_homoskedasticity_test (const bundle ret,
     printf "H0: \t Residuals are homoskedastic\n"
     printf "H1: \t Residuals are heteroskedastic\n"
     printf "N = %d\n", model.T
-    printf "LM-HOM = %2.3f (p=%.3f)\n", ret.test, ret.pvalue
+    printf "LM-HOM = %2.3f (p=%.3f)\n", self.test, self.pvalue
     printf "-------------------------------------------------------\n"
   endif
 end function
 
 
-function void print_reset_test (const bundle ret,
+function void print_reset_test (const bundle self,
                               const bundle model,
                               const bool verbose)
   /* Print RESET test results. */
@@ -172,7 +212,7 @@ function void print_reset_test (const bundle ret,
     printf "H0: \t Functional form is correct\n"
     printf "H1: \t Functional form is not correct\n"
     printf "N = %d\n", model.T
-    printf "LM-RESET = %2.3f (p=%.3f)\n", ret.test, ret.pvalue
+    printf "LM-RESET = %2.3f (p=%.3f)\n", self.test, self.pvalue
     printf "-------------------------------------------------------\n"
   endif
 end function
