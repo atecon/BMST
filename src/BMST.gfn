@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gretl-functions>
-<gretl-function-package name="BMST" minver="2017d">
+<gretl-function-package name="BMST" minver="2020b">
 <author email="atecon@posteo.de">Artur Tarassow</author>
-<version>2.0</version>
-<date>2020-09-10</date>
+<version>2.1</version>
+<date>2021-01-30</date>
 <description>Binary (logit + probit) model specification tests</description>
 <tags>C25 C52</tags>
 <help>
@@ -66,8 +66,9 @@ model:          bundle, Returned model bundle after 'logit' or 'probit'
 verbose:        bool, Print test results (default: TRUE)
 
 Return:
-Bundle comprising the test statistics (key &quot;test&quot;) and test's p-value
-(key &quot;pvalue&quot;).
+Bundle comprising the test statistics (key &quot;test&quot;), test's p-value
+(key &quot;pvalue&quot;) and error code (&quot;error&quot;) with value 0 (=FALSE) if no
+error occurred. If an error occurred the error code is 1 (=TRUE).
 -----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
@@ -79,8 +80,9 @@ model:          bundle, Returned model bundle after 'logit' or 'probit'
 verbose:        bool, Print test results (default: TRUE)
 
 Return:
-Bundle comprising the test statistics (key &quot;test&quot;) and test's p-value
-(key &quot;pvalue&quot;).
+Bundle comprising the test statistics (key &quot;tes, test's p-value
+(key &quot;pvalue&quot;) and error code (&quot;error&quot;) with value 0 (=FALSE) if no
+error occurred. If an error occurred the error code is 1 (=TRUE).
 -----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
@@ -91,13 +93,20 @@ model:          bundle, Returned model bundle after the 'logit' command
 verbose:        bool, Print test results (default: TRUE)
 
 Return:
-Bundle comprising the test statistics (key &quot;test&quot;) and test's p-value
-(key &quot;pvalue&quot;).
+Bundle comprising the test statistics (key &quot;test&quot;), test's p-value
+(key &quot;pvalue&quot;) and error code (&quot;error&quot;) with value 0 (=FALSE) if no
+error occurred. If an error occurred the error code is 1 (=TRUE).
 -----------------------------------------------------------------------
 
 
 
 CHANGELOG:
+- 2.1, January 2021:
+   + Drop missing values in both the endogenous and exogenous and print
+     a warning.
+   + Return the error code (key &quot;error&quot; in returned bundle).
+   + Minimum required version is now 2020b.
+   + Minor refactoring.
 - v2.0, September 2020:
    + Completely refactored.
    + New much simpler API.
@@ -115,10 +124,14 @@ CHANGELOG:
 <code>/* LM test of the null that the distribution is Logistic against the
 alternative that is is Burr Type 2 (and hence skewed - to the left or
 to the right) */
-if model.command != &quot;logit&quot;
-  funcerr &quot;Function works only for logit estimator.&quot;
+bundle self = initialize_self()
+self.error = model_isnot_logit(model.command)
+if self.error
+  return self
 endif
-bundle self
+scalar N = $nobs
+smpl deflist(model.ylist, model.xlist) --no-missing
+print_dropped_nobs_warning(N, $nobs)
 matrix my = {model.ylist}
 matrix mx = {model.xlist}
 matrix dee = 1 .+ exp(lincomb(model.xlist, model.coeff))
@@ -130,7 +143,13 @@ matrix r1m = mx .* scalefac
 matrix r2m = log(dee) .* sqrt(bf ./ (1 - bf))
 matrix X = r1m ~ r2m
 matrix U = zeros(rows(sr), 1)
-mols(sr, X, &amp;U)
+matrix V = {}
+scalar error = self.error
+matrix bhat = run_mols(sr, X, &amp;U, &amp;V, &amp;error)
+if error
+  self.error = error
+  return self
+endif
 matrix fitted = sr .- U
 scalar self.test = sum(fitted.^2)
 scalar self.pvalue = pvalue(c, 1, self.test)
@@ -144,12 +163,12 @@ return self
   <param name="verbose" type="bool" default="1" const="true"/>
  </params>
 <code>/* Wrapper for calling test for no heteroskedasticity. */
-bundle self
-if model.command != &quot;logit&quot; &amp;&amp; model.command != &quot;probit&quot;
-  printf &quot;\nError: Model must be either of type 'logit' or 'probit'.\n&quot;
-else
-  self = homoskedasticity_test(model, verbose)
+bundle self = initialize_self()
+self.error = model_isnot_logit_or_probit(model.command)
+if self.error
+  return self
 endif
+self = homoskedasticity_test(model, self, verbose)
 return self
 </code>
 </gretl-function>
@@ -159,63 +178,120 @@ return self
   <param name="verbose" type="bool" default="1" const="true"/>
  </params>
 <code>/* Wrapper for calling RESET type of test on correct functional form. */
-bundle self
-if model.command != &quot;logit&quot; &amp;&amp; model.command != &quot;probit&quot;
-  printf &quot;\nError: Model must be either of type 'logit' or 'probit'.\n&quot;
-else
-  self = reset_test(model, verbose)
+bundle self = initialize_self()
+self.error = model_isnot_logit_or_probit(model.command)
+if self.error
+  return self
 endif
+self = reset_test(model, self, verbose)
 return self
 </code>
 </gretl-function>
+<gretl-function name="initialize_self" type="bundle" private="1">
+<code>/* */
+return  _(error = FALSE)
+</code>
+</gretl-function>
+<gretl-function name="model_isnot_logit" type="scalar" private="1">
+ <params count="1">
+  <param name="model_name" type="string" const="true"/>
+ </params>
+<code>/* Return TRUE if model is not supported, otherwise FALSE. */
+if model_name != &quot;logit&quot;
+  printf &quot;\nError: Model must be of type 'logit'.\n&quot;
+  return TRUE
+endif
+return FALSE
+</code>
+</gretl-function>
+<gretl-function name="model_isnot_logit_or_probit" type="scalar" private="1">
+ <params count="1">
+  <param name="model_name" type="string" const="true"/>
+ </params>
+<code>/* Return TRUE if model is not supported, otherwise FALSE. */
+if model_name != &quot;logit&quot; &amp;&amp; model_name != &quot;probit&quot;
+  printf &quot;\nError: Model must be either of type 'logit' or probit'.\n&quot;
+  return TRUE
+endif
+return FALSE
+</code>
+</gretl-function>
 <gretl-function name="homoskedasticity_test" type="bundle" private="1">
- <params count="2">
+ <params count="3">
   <param name="model" type="bundle" const="true"/>
+  <param name="self" type="bundle"/>
   <param name="verbose" type="bool" default="1" const="true"/>
  </params>
 <code>/* In the LM test for homoskedasticity, the form of the skedastic function is
 taken to be exp(2Ztγ) where Zt is the vector giving the t-th observation on
 the r variables that are believed to give rise to the heteroskedasticity. */
-bundle ret = null
-bundle self = preparations(model)
-matrix U = zeros(rows(self.lhs), 1)
-matrix rhs = self.r1m ~ self.r2m
-mols(self.lhs, rhs, &amp;U)
-matrix fitted = self.lhs .- U
-scalar ret.test = sum(fitted.^2)
+bundle ret = preparations(model)
+matrix U = zeros(rows(ret.lhs), 1)
+matrix V = {}
+matrix rhs = ret.r1m ~ ret.r2m
+scalar error = self.error
+matrix bhat = run_mols(ret.lhs, rhs, &amp;U, &amp;V, &amp;error)
+if error
+  self.error = error
+  return self
+endif
+matrix fitted = ret.lhs .- U
+scalar self.test = sum(fitted.^2)
 /* The homoskedasticity  test statistic is asymptotically Chi Square with &quot;r&quot;
 degrees of freedom, under the null of  homoskedasticity, where &quot;r&quot; is the
 number of variables involved in the (alternative) heteroskedasticity. So
-calculate the (asymptotic)  p-value */
-scalar ret.pvalue = 1 - cdf(c, cols(self.r2m), ret.test)
-print_homoskedasticity_test(ret, model, verbose)
-return ret
+calculate the (asymptotic)  p-value. */
+scalar self.pvalue = 1 - cdf(c, cols(ret.r2m), self.test)
+print_homoskedasticity_test(self, model, verbose)
+return self
+</code>
+</gretl-function>
+<gretl-function name="run_mols" type="matrix" private="1">
+ <params count="5">
+  <param name="y" type="matrix" const="true"/>
+  <param name="X" type="matrix" const="true"/>
+  <param name="U" type="matrixref"/>
+  <param name="V" type="matrixref"/>
+  <param name="error" type="scalarref"/>
+ </params>
+<code>/* Wrapper for mols() */
+catch matrix bhat = mols(y, X, &amp;U, &amp;V)
+if $error
+  printf &quot;\nError: Estimation failure. Abort.&quot;
+  error = TRUE
+  return {}
+endif
+return bhat
 </code>
 </gretl-function>
 <gretl-function name="reset_test" type="bundle" private="1">
- <params count="2">
+ <params count="3">
   <param name="model" type="bundle" const="true"/>
+  <param name="self" type="bundle"/>
   <param name="verbose" type="bool" default="1" const="true"/>
  </params>
 <code>/* The LM test for functional form are similar to the familiar &quot;RESET test&quot;
 for the standard linear OLS model. */
-bundle ret = null
-bundle self = preparations(model)
-matrix r3 = self.scalefacx .* (self.xbeta).^2
-matrix rhs = r3 ~ self.r1m
+bundle ret = preparations(model)
+matrix r3 = ret.scalefacx .* (ret.xbeta).^2
+matrix rhs = r3 ~ ret.r1m
 # The coeffcient to be tested is that of the first regerssor - see the
 # ordering of the above group
-matrix V = zeros(rows(self.lhs), cols(rhs))
-matrix U = zeros(rows(self.lhs), 1)
-matrix bhat = mols(self.lhs, rhs, &amp;U, &amp;V)
-matrix stderr = sqrt(diag(V))
-matrix tstat = bhat ./ stderr
-scalar ret.test = tstat[1]
+matrix V = zeros(rows(ret.lhs), cols(rhs))
+matrix U = zeros(rows(ret.lhs), 1)
+scalar error = self.error
+matrix bhat = run_mols(ret.lhs, rhs, &amp;U, &amp;V, &amp;error)
+if error
+  self.error = error
+  return self
+endif
+matrix tstat = bhat ./ sqrt(diag(V))
+scalar self.test = tstat[1]
 /* The functional form  test statistic is asymptotically standard normal. So
 calculate the (asymptotic)  p-value: */
-scalar ret.pvalue = 2 * (1 - cnorm(abs(ret.test)))
-print_reset_test(ret, model, verbose)
-return ret
+scalar self.pvalue = 2 * (1 - cnorm(abs(self.test)))
+print_reset_test(self, model, verbose)
+return self
 </code>
 </gretl-function>
 <gretl-function name="print_burr_test" type="void" private="1">
@@ -238,7 +314,7 @@ endif
 </gretl-function>
 <gretl-function name="print_homoskedasticity_test" type="void" private="1">
  <params count="3">
-  <param name="ret" type="bundle" const="true"/>
+  <param name="self" type="bundle" const="true"/>
   <param name="model" type="bundle" const="true"/>
   <param name="verbose" type="bool" const="true"/>
  </params>
@@ -250,14 +326,14 @@ if verbose
   printf &quot;H0: \t Residuals are homoskedastic\n&quot;
   printf &quot;H1: \t Residuals are heteroskedastic\n&quot;
   printf &quot;N = %d\n&quot;, model.T
-  printf &quot;LM-HOM = %2.3f (p=%.3f)\n&quot;, ret.test, ret.pvalue
+  printf &quot;LM-HOM = %2.3f (p=%.3f)\n&quot;, self.test, self.pvalue
   printf &quot;-------------------------------------------------------\n&quot;
 endif
 </code>
 </gretl-function>
 <gretl-function name="print_reset_test" type="void" private="1">
  <params count="3">
-  <param name="ret" type="bundle" const="true"/>
+  <param name="self" type="bundle" const="true"/>
   <param name="model" type="bundle" const="true"/>
   <param name="verbose" type="bool" const="true"/>
  </params>
@@ -269,8 +345,21 @@ if verbose
   printf &quot;H0: \t Functional form is correct\n&quot;
   printf &quot;H1: \t Functional form is not correct\n&quot;
   printf &quot;N = %d\n&quot;, model.T
-  printf &quot;LM-RESET = %2.3f (p=%.3f)\n&quot;, ret.test, ret.pvalue
+  printf &quot;LM-RESET = %2.3f (p=%.3f)\n&quot;, self.test, self.pvalue
   printf &quot;-------------------------------------------------------\n&quot;
+endif
+</code>
+</gretl-function>
+<gretl-function name="print_dropped_nobs_warning" type="void" private="1">
+ <params count="2">
+  <param name="N_complete" type="scalar" const="true"/>
+  <param name="N_restricted" type="scalar" const="true"/>
+ </params>
+<code>/*  */
+errorif(N_complete &lt; N_restricted, &quot;Restricted sample cannot be larger than unrestricted one.&quot;)
+if N_complete &gt; N_restricted
+  printf &quot;\nWarning: n = %d missing values were dropped before test computation.\n&quot;, (N_complete - N_restricted)
+  flush
 endif
 </code>
 </gretl-function>
@@ -280,17 +369,19 @@ endif
  </params>
 <code>/* Prepare things that are common for a couple of tests. */
 bundle self
-list xlist = model.xlist
-matrix self.xbeta = {lincomb(xlist, model.coeff)}
+list xlist_without_const = model.xlist - const
+scalar N = $nobs
+smpl deflist(model.ylist, model.xlist) --no-missing
+print_dropped_nobs_warning(N, $nobs)
+matrix self.xbeta = {lincomb(model.xlist, model.coeff)}
 matrix bf = (model.command == &quot;logit&quot;) ? logistic(self.xbeta) : cnorm(self.xbeta)
 matrix sf = (model.command == &quot;logit&quot;) ? bf .* (1-bf) : dnorm(self.xbeta)
 matrix s = sqrt(bf .* (1 - bf))
 self.lhs = ({model.ylist} - bf) ./ s
 self.scalefacx = sf ./ s
 self.scalefacz = -self.xbeta .* self.scalefacx
-self.r1m = {xlist} .* self.scalefacx
-list xlist -= const
-self.r2m = {xlist} .* self.scalefacz
+self.r1m = {model.xlist} .* self.scalefacx
+self.r2m = {xlist_without_const} .* self.scalefacz
 return self
 </code>
 </gretl-function>

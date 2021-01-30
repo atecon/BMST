@@ -1,43 +1,43 @@
-function scalar has_missings (const list L)
-  /* Check each series for missing values.
-  If any series has at least a missing value return TRUE, otherwise FALSE. */
+function bundle initialize_self (void)
+  /* */
+  return  _(error = FALSE)
+end function
 
-  loop foreach i L
-    if sum(missing(L.$i)) > 0
-      return TRUE
-    endif
-  endloop
+
+function scalar model_isnot_logit (const string model_name)
+  /* Return TRUE if model is not supported, otherwise FALSE. */
+
+  if model_name != "logit"
+    printf "\nError: Model must be of type 'logit'.\n"
+    return TRUE
+  endif
 
   return FALSE
 end function
 
-function void print_missings_error_set_error (const bool has_missings, bundle *self)
-  /* code description
-  return: type, description */
+function scalar model_isnot_logit_or_probit (const string model_name)
+  /* Return TRUE if model is not supported, otherwise FALSE. */
 
-  self.error = has_missings
-
-  if has_missings == TRUE
-    printf "\nError: Missing value(s) encountered. Abort.\n"
+  if model_name != "logit" && model_name != "probit"
+    printf "\nError: Model must be either of type 'logit' or probit'.\n"
+    return TRUE
   endif
+
+  return FALSE
 end function
 
 function bundle binary_homoskedasticity (const bundle model,
                                          const bool verbose[1])
   /* Wrapper for calling test for no heteroskedasticity. */
 
-  bundle self
-  scalar has_missings = has_missings(deflist(model.xlist, model.ylist))
-  print_missings_error_set_error(has_missings, &self)
-  if self.error == TRUE
+  bundle self = initialize_self()
+
+  self.error = model_isnot_logit_or_probit(model.command)
+  if self.error
     return self
   endif
 
-  if model.command != "logit" && model.command != "probit"
-    printf "\nError: Model must be either of type 'logit' or 'probit'.\n"
-  else
-    self = homoskedasticity_test(model, verbose)
-  endif
+  self = homoskedasticity_test(model, self, verbose)
 
   return self
 end function
@@ -47,79 +47,103 @@ function bundle binary_reset (const bundle model,
                               const bool verbose[1])
   /* Wrapper for calling RESET type of test on correct functional form. */
 
-  bundle self
-  scalar has_missings = has_missings(deflist(model.xlist, model.ylist))
-  print_missings_error_set_error(has_missings, &self)
-  if self.error == TRUE
+  bundle self = initialize_self()
+
+  self.error = model_isnot_logit_or_probit(model.command)
+  if self.error
     return self
   endif
 
-  if model.command != "logit" && model.command != "probit"
-    printf "\nError: Model must be either of type 'logit' or 'probit'.\n"
-  else
-    self = reset_test(model, verbose)
-  endif
+  self = reset_test(model, self, verbose)
 
   return self
 end function
 
 
 function bundle homoskedasticity_test (const bundle model,
+                                       bundle self,
                                        const bool verbose[1])
   /* In the LM test for homoskedasticity, the form of the skedastic function is
   taken to be exp(2Ztγ) where Zt is the vector giving the t-th observation on
   the r variables that are believed to give rise to the heteroskedasticity. */
 
-  bundle ret = null
-  bundle self = preparations(model)
+  bundle ret = preparations(model)
 
-  matrix U = zeros(rows(self.lhs), 1)
-  matrix rhs = self.r1m ~ self.r2m
+  matrix U = zeros(rows(ret.lhs), 1)
+  matrix V = {}
+  matrix rhs = ret.r1m ~ ret.r2m
 
-  mols(self.lhs, rhs, &U)
-  matrix fitted = self.lhs .- U
-  scalar ret.test = sum(fitted.^2)
+
+  scalar error = self.error
+  matrix bhat = run_mols(ret.lhs, rhs, &U, &V, &error)
+  if error
+    self.error = error
+    return self
+  endif
+
+  matrix fitted = ret.lhs .- U
+  scalar self.test = sum(fitted.^2)
 
   /* The homoskedasticity  test statistic is asymptotically Chi Square with "r"
   degrees of freedom, under the null of  homoskedasticity, where "r" is the
   number of variables involved in the (alternative) heteroskedasticity. So
-  calculate the (asymptotic)  p-value */
-  scalar ret.pvalue = 1 - cdf(c, cols(self.r2m), ret.test)
+  calculate the (asymptotic)  p-value. */
+  scalar self.pvalue = 1 - cdf(c, cols(ret.r2m), self.test)
 
-  print_homoskedasticity_test(ret, model, verbose)
+  print_homoskedasticity_test(self, model, verbose)
 
-  return ret
+  return self
 end function
 
 
-function bundle reset_test (const bundle model, const bool verbose[1])
+function matrix run_mols (const matrix y, const matrix X, matrix *U, matrix *V,
+                          scalar *error)
+  /* Wrapper for mols() */
+
+  catch matrix bhat = mols(y, X, &U, &V)
+  if $error
+    printf "\nError: Estimation failure. Abort."
+    error = TRUE
+    return {}
+  endif
+
+  return bhat
+end function
+
+
+function bundle reset_test (const bundle model,
+                            bundle self,
+                            const bool verbose[1])
   /* The LM test for functional form are similar to the familiar "RESET test"
   for the standard linear OLS model. */
 
-  bundle ret = null
-  bundle self = preparations(model)
+  bundle ret = preparations(model)
 
-  matrix r3 = self.scalefacx .* (self.xbeta).^2
-  matrix rhs = r3 ~ self.r1m
+  matrix r3 = ret.scalefacx .* (ret.xbeta).^2
+  matrix rhs = r3 ~ ret.r1m
 
   # The coeffcient to be tested is that of the first regerssor - see the
   # ordering of the above group
-  matrix V = zeros(rows(self.lhs), cols(rhs))
-  matrix U = zeros(rows(self.lhs), 1)
+  matrix V = zeros(rows(ret.lhs), cols(rhs))
+  matrix U = zeros(rows(ret.lhs), 1)
 
-  matrix bhat = mols(self.lhs, rhs, &U, &V)
-  matrix stderr = sqrt(diag(V))
+  scalar error = self.error
+  matrix bhat = run_mols(ret.lhs, rhs, &U, &V, &error)
+  if error
+    self.error = error
+    return self
+  endif
 
-  matrix tstat = bhat ./ stderr
-  scalar ret.test = tstat[1]
+  matrix tstat = bhat ./ sqrt(diag(V))
+  scalar self.test = tstat[1]
 
   /* The functional form  test statistic is asymptotically standard normal. So
     calculate the (asymptotic)  p-value: */
-  scalar ret.pvalue = 2 * (1 - cnorm(abs(ret.test)))
+  scalar self.pvalue = 2 * (1 - cnorm(abs(self.test)))
 
-  print_reset_test(ret, model, verbose)
+  print_reset_test(self, model, verbose)
 
-  return ret
+  return self
 end function
 
 
@@ -128,17 +152,16 @@ function bundle binary_burr (const bundle model, const bool verbose[1])
   alternative that is is Burr Type 2 (and hence skewed - to the left or
   to the right) */
 
-  if model.command != "logit"
-      funcerr "Function works only for logit estimator."
-  endif
+  bundle self = initialize_self()
 
-  bundle self
-
-  scalar has_missings = has_missings(deflist(model.xlist, model.ylist))
-  print_missings_error_set_error(has_missings, &self)
-  if self.error == TRUE
+  self.error = model_isnot_logit(model.command)
+  if self.error
     return self
   endif
+
+  scalar N = $nobs
+  smpl deflist(model.ylist, model.xlist) --no-missing
+  print_dropped_nobs_warning(N, $nobs)
 
   matrix my = {model.ylist}
   matrix mx = {model.xlist}
@@ -153,7 +176,15 @@ function bundle binary_burr (const bundle model, const bool verbose[1])
   matrix X = r1m ~ r2m
 
   matrix U = zeros(rows(sr), 1)
-  mols(sr, X, &U)
+  matrix V = {}
+
+  scalar error = self.error
+  matrix bhat = run_mols(sr, X, &U, &V, &error)
+  if error
+    self.error = error
+    return self
+  endif
+
   matrix fitted = sr .- U
 
   scalar self.test = sum(fitted.^2)
@@ -218,13 +249,31 @@ function void print_reset_test (const bundle self,
 end function
 
 
+function void print_dropped_nobs_warning (const scalar N_complete,
+                                          const scalar N_restricted)
+  /*  */
+
+  errorif(N_complete < N_restricted, "Restricted sample cannot be larger than unrestricted one.")
+
+  if N_complete > N_restricted
+    printf "\nWarning: n = %d missing values were dropped before test computation.\n",\
+      (N_complete - N_restricted)
+    flush
+  endif
+end function
+
+
 function bundle preparations (const bundle model)
     /* Prepare things that are common for a couple of tests. */
 
     bundle self
+    list xlist_without_const = model.xlist - const
 
-    list xlist = model.xlist
-    matrix self.xbeta = {lincomb(xlist, model.coeff)}
+    scalar N = $nobs
+    smpl deflist(model.ylist, model.xlist) --no-missing
+    print_dropped_nobs_warning(N, $nobs)
+
+    matrix self.xbeta = {lincomb(model.xlist, model.coeff)}
 
     matrix bf = (model.command == "logit") ? logistic(self.xbeta) \
       : cnorm(self.xbeta)
@@ -236,10 +285,8 @@ function bundle preparations (const bundle model)
     self.scalefacx = sf ./ s
     self.scalefacz = -self.xbeta .* self.scalefacx
 
-    self.r1m = {xlist} .* self.scalefacx
-
-    list xlist -= const
-    self.r2m = {xlist} .* self.scalefacz
+    self.r1m = {model.xlist} .* self.scalefacx
+    self.r2m = {xlist_without_const} .* self.scalefacz
 
     return self
 end function

@@ -6,6 +6,40 @@ include assertion.gfn
 include "./src/BMST.inp" --force
 
 
+bundles Parameters = null
+Parameters = Parameters + _(command = "logit", expected = FALSE)
+Parameters = Parameters + _(command = "foo", expected = TRUE)
+function void test_model_isnot_logit (const bundles P)
+    print "Start testing model_isnot_logit()."
+
+    loop foreach i P
+        # Given + When
+        actual = model_isnot_logit(P[i].command)
+
+         # Then
+         assert(actual == P[i].expected)
+    endloop
+end function
+test_model_isnot_logit(Parameters)
+
+
+bundles Parameters = null
+Parameters = Parameters + _(command = "probit", expected = FALSE)
+Parameters = Parameters + _(command = "logit", expected = FALSE)
+Parameters = Parameters + _(command = "foo", expected = TRUE)
+function void test_model_isnot_logit_probit (const bundles P)
+    print "Start testing model_isnot_logit_or_probit()."
+
+    loop foreach i P
+        # Given + When
+        actual = model_isnot_logit_or_probit(P[i].command)
+
+         # Then
+         assert(actual == P[i].expected)
+    endloop
+end function
+test_model_isnot_logit_probit(Parameters)
+
 
 open greene19_1.gdt -q -p
 series GPA_w_missings = GPA
@@ -13,38 +47,36 @@ GPA_w_missings[19] = NA
 series GRADE_w_missings = GRADE
 GRADE_w_missings[19] = NA
 bundles Parameters = null
-/*
+
 Parameters = Parameters + \
             _(which= "binary_homoskedasticity", endog = deflist(GRADE),\
-            xlist = deflist(const, GPA_w_missings), expected = TRUE)
+            xlist = deflist(const, GPA_w_missings), expected_error = TRUE)
 Parameters = Parameters + \
             _(which= "binary_homoskedasticity", endog = deflist(GRADE),\
-            xlist = deflist(const, GPA), expected = FALSE)
+            xlist = deflist(const, GPA), expected_error = FALSE)
 Parameters = Parameters + \
             _(which= "binary_homoskedasticity", endog = deflist(GRADE_w_missings),\
-            xlist = deflist(const, GPA), expected = TRUE)
-*/
-#/*
+            xlist = deflist(const, GPA), expected_error = TRUE)
+
 Parameters = Parameters + \
             _(which= "binary_reset", endog = deflist(GRADE),\
-            xlist = deflist(const, GPA_w_missings), expected = TRUE)
+            xlist = deflist(const, GPA_w_missings), expected_error = TRUE)
 Parameters = Parameters + \
             _(which= "binary_reset", endog = deflist(GRADE),\
-            xlist = deflist(const, GPA), expected = FALSE)
+            xlist = deflist(const, GPA), expected_error = FALSE)
 Parameters = Parameters + \
             _(which= "binary_reset", endog = deflist(GRADE_w_missings),\
-            xlist = deflist(const, GPA), expected = TRUE)
-#*/
+            xlist = deflist(const, GPA), expected_error = TRUE)
+
 Parameters = Parameters + \
             _(which= "binary_burr", endog = deflist(GRADE),\
-            xlist = deflist(const, GPA_w_missings), expected = TRUE)
+            xlist = deflist(const, GPA_w_missings), expected_error = TRUE)
 Parameters = Parameters + \
             _(which= "binary_burr", endog = deflist(GRADE),\
-            xlist = deflist(const, GPA), expected = FALSE)
+            xlist = deflist(const, GPA), expected_error = FALSE)
 Parameters = Parameters + \
             _(which= "binary_burr", endog = deflist(GRADE_w_missings),\
-            xlist = deflist(const, GPA), expected = TRUE)
-
+            xlist = deflist(const, GPA), expected_error = TRUE)
 function void test_tests_w_missings (const bundles P)
     print "Start testing how tests handle missing values."
 
@@ -58,13 +90,13 @@ function void test_tests_w_missings (const bundles P)
         # When
         string funcname = P[i].which
         bundle Output = @funcname($model)
-        actual = Output.error
 
          # Then
-         assert((actual > 0) == P[i].expected)
+         assert((Output.error > 0) == P[i].expected_error)
     endloop
 end function
 test_tests_w_missings(Parameters)
+
 
 
 open greene19_1.gdt -q -p
@@ -120,30 +152,5 @@ end function
 test_binary_burr(dataset)
 
 
-open greene19_1.gdt -q -p
-series GPA_w_missings = GPA
-GPA_w_missings[19] = NA
-series PSI_w_missings = PSI
-PSI_w_missings[19] = NA
-bundles Parameters = null
-Parameters = Parameters + \
-    _(mylist = deflist(GPA_w_missings, PSI_w_missings), expected = TRUE)
-Parameters = Parameters + \
-    _(mylist = deflist(GPA, PSI_w_missings), expected = TRUE)
-Parameters = Parameters + \
-    _(mylist = deflist(GPA_w_missings, PSI), expected = TRUE)
-Parameters = Parameters + \
-    _(mylist = deflist(GPA, PSI), expected = FALSE)
-function void test_has_missings (const bundles P)
-    print "Start testing has_missings()."
-
-    loop foreach i P
-        # Given + When
-        actual = has_missings(P[i].mylist)
-        # Then
-        assert(actual == P[i].expected)
-    endloop
-end function
-test_has_missings(Parameters)
 
 printf "\nInfo: All tests passed.\n"

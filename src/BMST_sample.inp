@@ -1,17 +1,16 @@
 set verbose off
 clear
 
-#include BMST.gfn
-include "/home/ninja/repo/bmst/src/BMST.inp" --force
+include BMST.gfn
 
 open greene19_1.gdt
 
 # Probit example
 probit GRADE 0 GPA TUCE PSI
-#bundle test = binary_reset($model)
-#print test
+bundle test = binary_reset($model)
+print test
 bundle test = binary_homoskedasticity($model)
-stop
+
 
 # Logit example
 logit GRADE 0 GPA TUCE PSI

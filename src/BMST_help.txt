@@ -57,10 +57,9 @@ model:          bundle, Returned model bundle after 'logit' or 'probit'
 verbose:        bool, Print test results (default: TRUE)
 
 Return:
-Bundle comprising the test statistics (key "test") and test's p-value
-(key "pvalue"). If any of the endogenous or exogenous series includes
-missing values, the returned bundle is empty and an error message is
-printed.
+Bundle comprising the test statistics (key "test"), test's p-value
+(key "pvalue") and error code ("error") with value 0 (=FALSE) if no
+error occurred. If an error occurred the error code is 1 (=TRUE).
 -----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
@@ -72,10 +71,9 @@ model:          bundle, Returned model bundle after 'logit' or 'probit'
 verbose:        bool, Print test results (default: TRUE)
 
 Return:
-Bundle comprising the test statistics (key "test") and test's p-value
-(key "pvalue"). If any of the endogenous or exogenous series includes
-missing values, the returned bundle is empty and an error message is
-printed.
+Bundle comprising the test statistics (key "tes, test's p-value
+(key "pvalue") and error code ("error") with value 0 (=FALSE) if no
+error occurred. If an error occurred the error code is 1 (=TRUE).
 -----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
@@ -86,19 +84,20 @@ model:          bundle, Returned model bundle after the 'logit' command
 verbose:        bool, Print test results (default: TRUE)
 
 Return:
-Bundle comprising the test statistics (key "test") and test's p-value
-(key "pvalue"). If any of the endogenous or exogenous series includes
-missing values, the returned bundle is empty and an error message is
-printed.
+Bundle comprising the test statistics (key "test"), test's p-value
+(key "pvalue") and error code ("error") with value 0 (=FALSE) if no
+error occurred. If an error occurred the error code is 1 (=TRUE).
 -----------------------------------------------------------------------
 
 
 
 CHANGELOG:
 - 2.1, January 2021:
-   + Add a check for missing values which would otherwise break the
-     computation.
+   + Drop missing values in both the endogenous and exogenous and print
+     a warning.
+   + Return the error code (key "error" in returned bundle).
    + Minimum required version is now 2020b.
+   + Minor refactoring.
 - v2.0, September 2020:
    + Completely refactored.
    + New much simpler API.
