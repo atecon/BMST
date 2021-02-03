@@ -102,7 +102,7 @@ function matrix run_mols (const matrix y, const matrix X, matrix *U, matrix *V,
 
   catch matrix bhat = mols(y, X, &U, &V)
   if $error
-    printf "\nError: Estimation failure. Abort."
+    printf "\nError: Estimation failure. Abort.\n"
     error = TRUE
     return {}
   endif

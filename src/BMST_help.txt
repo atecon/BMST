@@ -92,7 +92,7 @@ error occurred. If an error occurred the error code is 1 (=TRUE).
 
 
 CHANGELOG:
-- 2.1, January 2021:
+- 2.1, February 2021:
    + Drop missing values in both the endogenous and exogenous and print
      a warning.
    + Return the error code (key "error" in returned bundle).

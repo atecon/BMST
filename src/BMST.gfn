@@ -3,7 +3,7 @@
 <gretl-function-package name="BMST" minver="2020b">
 <author email="atecon@posteo.de">Artur Tarassow</author>
 <version>2.1</version>
-<date>2021-01-30</date>
+<date>2021-02-03</date>
 <description>Binary (logit + probit) model specification tests</description>
 <tags>C25 C52</tags>
 <help>
@@ -101,7 +101,7 @@ error occurred. If an error occurred the error code is 1 (=TRUE).
 
 
 CHANGELOG:
-- 2.1, January 2021:
+- 2.1, February 2021:
    + Drop missing values in both the endogenous and exogenous and print
      a warning.
    + Return the error code (key &quot;error&quot; in returned bundle).
@@ -257,7 +257,7 @@ return self
 <code>/* Wrapper for mols() */
 catch matrix bhat = mols(y, X, &amp;U, &amp;V)
 if $error
-  printf &quot;\nError: Estimation failure. Abort.&quot;
+  printf &quot;\nError: Estimation failure. Abort.\n&quot;
   error = TRUE
   return {}
 endif
